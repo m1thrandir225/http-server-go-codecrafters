@@ -44,35 +44,27 @@ func main() {
 	}
 
 	requestContent := strings.Split(string(data[:length]), EOF_MAKER)
-	reqFirstLine := strings.Split(requestContent[0], " ")  // request info
-	reqSecondLine := strings.Split(requestContent[1], " ") // host info
-	reqThirdLine := strings.Split(requestContent[2], " ")  // user-agent info
+	reqFirstLine := strings.Split(requestContent[0], " ") // request info
+	//reqSecondLine := strings.Split(requestContent[1], " ") // host info
+	reqThirdLine := strings.Split(requestContent[2], " ") // user-agent info
 
-	method := reqFirstLine[0]
+	//method := reqFirstLine[0]
 	path := reqFirstLine[1]
 
-	hostAddress := reqSecondLine[1]
+	//hostAddress := reqSecondLine[1]
 	userAgent := reqThirdLine[1]
 
 	var response []byte
-
-	switch {
-	case path == "/":
+	if path == "/" {
 		response = []byte(OK_RESPONSE)
-		connection.Write(response)
-	case path == "/" && strings.HasPrefix(path, "/echo/"):
+	} else if strings.HasPrefix(path, "/echo/") {
 		expectedString, _ := strings.CutPrefix(path, "/echo/")
 		response = []byte(OK_RESPONSE_WITH_BODY + fmt.Sprintf("Content-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s\r\n", len(expectedString), expectedString))
 
-		connection.Write(response)
-	case path == "/user-agent":
-
+	} else if path == "/user-agent" {
 		response = []byte(OK_RESPONSE_WITH_BODY + fmt.Sprintf("Content-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s\r\n", len(userAgent), userAgent))
-
-		connection.Write(response)
-	default:
+	} else {
 		response = []byte(NOT_FOUND_RESPONSE)
-		connection.Write(response)
 	}
-
+	connection.Write(response)
 }

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io/fs"
 	"net"
 	"os"
 	"strings"
@@ -13,13 +15,17 @@ const (
 	OK_RESPONSE           = "HTTP/1.1 200 OK\r\n\r\n"
 	OK_RESPONSE_WITH_BODY = "HTTP/1.1 200 OK\r\n"
 	NOT_FOUND_RESPONSE    = "HTTP/1.1 404 Not Found\r\n\r\n"
+	FILE_UPLOADED         = "HTTP/1.1 201 OK\r\n\r\n"
 )
 
 func HandleConnection(conn net.Conn, dir string) {
 	defer conn.Close()
 	req := ReadRequest(conn)
 
-	path, msg := ParsePath(req)
+	method, path, msg := ParsePath(req)
+
+	bodyStart := strings.Index(string(req), "\r\n\r\n")
+	fmt.Printf("Path: %s, Message: %s", path, msg)
 
 	if path == "/" {
 		//200 OK status
@@ -30,10 +36,24 @@ func HandleConnection(conn net.Conn, dir string) {
 
 		conn.Write(response)
 
+	} else if strings.Contains(path, "files") && method == "POST" {
+
+		filename := msg
+		filepath := dir + "/" + filename
+
+		fmt.Printf("Filename: %s, filepath: %s", filename, filepath)
+
+		fileContent := req[bodyStart+4:]
+
+		trimmedContent := bytes.Trim([]byte(fileContent), "\x00")
+
+		WriteFile(filepath, string(trimmedContent))
+
+		conn.Write([]byte(FILE_UPLOADED))
 	} else if strings.Contains(path, "files") {
 		file, err := os.ReadFile(dir + msg)
 		if err != nil {
-			fmt.Printf("Error reading file", err.Error())
+			fmt.Printf("Error reading file: ", err.Error())
 			conn.Write([]byte(NOT_FOUND_RESPONSE))
 			os.Exit(1)
 		}
@@ -67,7 +87,7 @@ func ReadRequest(conn net.Conn) string {
 /**
 * Parse the path
  */
-func ParsePath(pathReq string) (string, string) {
+func ParsePath(pathReq string) (string, string, string) {
 	parts := strings.Split(pathReq, " ")
 
 	if len(parts) < 2 {
@@ -77,7 +97,11 @@ func ParsePath(pathReq string) (string, string) {
 
 	path := parts[1]
 
-	return GetMessageFromPath(path)
+	method := parts[0]
+
+	url, msg := GetMessageFromPath(path)
+
+	return method, url, msg
 }
 
 /*
@@ -89,6 +113,19 @@ func GetMessageFromPath(path string) (string, string) {
 		return ("/" + parts[1]), ""
 	}
 	return ("/" + parts[1]), strings.Join(parts[2:], "/")
+}
+
+func GetFile(filepath string) (bool, string) {
+	file, err := os.ReadFile(filepath)
+	if err != nil {
+		return false, ""
+	}
+
+	return true, string(file)
+}
+
+func WriteFile(filepath string, content string) {
+	os.WriteFile(filepath, []byte(content), fs.FileMode(os.O_CREATE))
 }
 
 /*
@@ -114,7 +151,7 @@ func ParseUserAgent(s string) string {
 }
 
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
+	// You can use print statements as follows for debugging, they'll be  isible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 	// Uncomment this block to pass the first stage
 	//

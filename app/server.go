@@ -59,21 +59,19 @@ func main() {
 	switch {
 	case path == "/":
 		response = []byte(OK_RESPONSE)
-
 		connection.Write(response)
 	case path == "/" && strings.HasPrefix(path, "/echo/"):
 		expectedString, _ := strings.CutPrefix(path, "/echo/")
-
 		response = []byte(OK_RESPONSE_WITH_BODY + fmt.Sprintf("Content-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s\r\n", len(expectedString), expectedString))
 
 		connection.Write(response)
 	case path == "/user-agent":
+
 		response = []byte(OK_RESPONSE_WITH_BODY + fmt.Sprintf("Content-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s\r\n", len(userAgent), userAgent))
 
 		connection.Write(response)
 	default:
 		response = []byte(NOT_FOUND_RESPONSE)
-
 		connection.Write(response)
 	}
 

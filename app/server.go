@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	EOF_MAKER          = "\r\n"
-	OK_RESPONSE        = "HTTP/1.1 200 OK\r\n\r\n"
-	NOT_FOUND_RESPONSE = "HTTP/1.1 404 Not Found\r\n\r\n"
+	EOF_MAKER             = "\r\n"
+	OK_RESPONSE           = "HTTP/1.1 200 OK\r\n\r\n"
+	OK_RESPONSE_WITH_BODY = "HTTP/1.1 200 OK\r\n"
+	NOT_FOUND_RESPONSE    = "HTTP/1.1 404 Not Found\r\n\r\n"
 )
 
 func main() {
@@ -52,6 +53,10 @@ func main() {
 
 	if method == "GET" && path == "/" {
 		response = []byte(OK_RESPONSE)
+	} else if method == "GET" && strings.HasPrefix(path, "/echo/") {
+		expectedString, _ := strings.CutPrefix(path, "/echo/")
+
+		response = []byte(OK_RESPONSE_WITH_BODY + fmt.Sprintf("Content-Type: text/plain\r\n Content-Length: %d\r\n\r\n%s\r\n", len(expectedString), expectedString))
 	} else {
 		response = []byte(NOT_FOUND_RESPONSE)
 	}

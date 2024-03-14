@@ -1,11 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"strings"
-	// Uncomment this block to pass the first stage
 	"net"
 	"os"
+	"strings"
 )
 
 const (
@@ -15,7 +15,7 @@ const (
 	NOT_FOUND_RESPONSE    = "HTTP/1.1 404 Not Found\r\n\r\n"
 )
 
-func HandleConnection(conn net.Conn) {
+func HandleConnection(conn net.Conn, dir string) {
 	defer conn.Close()
 	req := ReadRequest(conn)
 
@@ -30,10 +30,22 @@ func HandleConnection(conn net.Conn) {
 
 		conn.Write(response)
 
+	} else if strings.Contains(path, "files") {
+		file, err := os.ReadFile(dir + msg)
+		if err != nil {
+			fmt.Printf("Error reading file", err.Error())
+			conn.Write([]byte(NOT_FOUND_RESPONSE))
+			os.Exit(1)
+		}
+
+		fileContent := string(file)
+
+		response := []byte(OK_RESPONSE_WITH_BODY + fmt.Sprintf("Content-Type: application/octet-stream\r\nContent-length: %d\r\n\r\n%s\r\n", len(fileContent), fileContent))
+
+		conn.Write(response)
 	} else if strings.Contains(path, "user-agent") {
 		userAgent := ParseUserAgent(req)
 		response := []byte(OK_RESPONSE_WITH_BODY + fmt.Sprintf("Content-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s\r\n", len(userAgent), userAgent))
-
 		conn.Write(response)
 	} else {
 		//404 not found
@@ -105,6 +117,17 @@ func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 	// Uncomment this block to pass the first stage
+	//
+	working_dir, err := os.Getwd()
+
+	if err != nil {
+		fmt.Printf("Error getting cwd", err.Error())
+		os.Exit(1)
+	}
+
+	dir := flag.String("directory", working_dir, "files directory")
+	flag.Parse()
+
 	port := "4221"
 
 	listen, err := net.Listen("tcp", "0.0.0.0:"+port)
@@ -120,6 +143,6 @@ func main() {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		go HandleConnection(conn)
+		go HandleConnection(conn, *dir)
 	}
 }

@@ -11,7 +11,7 @@ import (
 const (
 	EOF_MAKER          = "\r\n"
 	OK_RESPONSE        = "HTTP/1.1 200 OK\r\n\r\n"
-	NOT_FOUND_RESPONSE = "HTTP/1.1 400 Not Found\r\n\r\n"
+	NOT_FOUND_RESPONSE = "HTTP/1.1 404 Not Found\r\n\r\n"
 )
 
 func main() {

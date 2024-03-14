@@ -14,6 +14,7 @@ func main() {
 	port := "4221"
 
 	listen, err := net.Listen("tcp", "0.0.0.0:"+port)
+
 	if err != nil {
 		fmt.Println("Failed to bind to port " + port)
 		os.Exit(1)
@@ -24,7 +25,9 @@ func main() {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-	_, err = connection.Write([]byte("HTPP/1.1 200 OK\r\n\r\n"))
+
+	_, err = connection.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+
 	if err != nil {
 		fmt.Println("There was an error sending the response", err.Error())
 		os.Exit(1)

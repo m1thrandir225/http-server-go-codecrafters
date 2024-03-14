@@ -2,9 +2,16 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	// Uncomment this block to pass the first stage
 	"net"
 	"os"
+)
+
+const (
+	EOF_MAKER          = "\r\n"
+	OK_RESPONSE        = "HTTP/1.1 200 OK\r\n\r\n"
+	NOT_FOUND_RESPONSE = "HTTP/1.1 400 Not Found\r\n\r\n"
 )
 
 func main() {
@@ -26,10 +33,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	_, err = connection.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	defer listen.Close()
 
+	data := make([]byte, 1024)
+
+	length, err := connection.Read(data)
 	if err != nil {
-		fmt.Println("There was an error sending the response", err.Error())
-		os.Exit(1)
+		fmt.Println("Error getting data: ", err.Error())
 	}
+
+	requestContent := strings.Split(string(data[:length]), EOF_MAKER)
+	reqFirstLine := strings.Split(requestContent[0], " ")
+
+	method := reqFirstLine[0]
+	path := reqFirstLine[1]
+
+	var response []byte
+
+	if method == "GET" && path == "/" {
+		response = []byte(OK_RESPONSE)
+	} else {
+		response = []byte(NOT_FOUND_RESPONSE)
+	}
+
+	connection.Write(response)
 }

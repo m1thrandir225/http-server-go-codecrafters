@@ -44,20 +44,28 @@ func main() {
 	}
 
 	requestContent := strings.Split(string(data[:length]), EOF_MAKER)
-	reqFirstLine := strings.Split(requestContent[0], " ")
+	reqFirstLine := strings.Split(requestContent[0], " ")  // request info
+	reqSecondLine := strings.Split(requestContent[1], " ") // host info
+	reqThirdLine := strings.Split(requestContent[2], " ")  // user-agent info
 
 	method := reqFirstLine[0]
 	path := reqFirstLine[1]
 
+	hostAddress := reqSecondLine[1]
+	userAgent := reqThirdLine[1]
+
 	var response []byte
 
-	if method == "GET" && path == "/" {
+	switch {
+	case path == "/":
 		response = []byte(OK_RESPONSE)
-	} else if method == "GET" && strings.HasPrefix(path, "/echo/") {
+	case path == "/" && strings.HasPrefix(path, "/echo/"):
 		expectedString, _ := strings.CutPrefix(path, "/echo/")
 
 		response = []byte(OK_RESPONSE_WITH_BODY + fmt.Sprintf("Content-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s\r\n", len(expectedString), expectedString))
-	} else {
+	case path == "/user-agent":
+		response = []byte(OK_RESPONSE_WITH_BODY + fmt.Sprintf("Content-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s\r\n", len(userAgent), userAgent))
+	default:
 		response = []byte(NOT_FOUND_RESPONSE)
 	}
 
